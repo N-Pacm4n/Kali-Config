@@ -17,7 +17,7 @@ install() {
 
     # ── Update ───────────────────────────────────────────────────────────────────
     info "Running apt update..."
-    apt get update -y && apt get dist-upgrade -y >> "$MODULE_LOG" 2>&1 && success "apt update done"
+    apt update -y && apt dist-upgrade -y >> "$MODULE_LOG" 2>&1 && success "apt update done"
 
     # ── XFCE4 Terminal ───────────────────────────────────────────────────────────
     info "Installing XFCE4-Terminal..."
