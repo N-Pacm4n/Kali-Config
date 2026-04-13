@@ -146,15 +146,17 @@ export PATH=\$PATH:\$GOROOT/bin:\$GOPATH/bin"
     fi
 
     # ── tmux with logging capabilities ──────────────────────────────────────────────────────
-        apt_install tmux git
-
+    apt_install tmux git
+ 
     local tpm_dir="$USER_HOME/.tmux/plugins/tpm"
     local scripts_dir="$USER_HOME/.tmux/scripts"
     local logs_dir="$USER_HOME/tmux-logs"
     local tmux_conf="$USER_HOME/.tmux.conf"
-
+    local logger_file="$scripts_dir/zsh-logger.zsh"
+    local zshrc="$USER_HOME/.zshrc"
+ 
     mkdir -p "$scripts_dir" "$logs_dir"
-
+ 
     # ── Install TPM ──────────────────────────────────────────────────────────────
     if [[ ! -d "$tpm_dir/.git" ]]; then
         sudo -u "$TARGET_USER" git clone \
@@ -164,108 +166,176 @@ export PATH=\$PATH:\$GOROOT/bin:\$GOPATH/bin"
     else
         info "TPM already installed"
     fi
-
-    # ── Write auto-log.sh (the fixed version with full zsh plugin stripping) ─────
-    cat > "$scripts_dir/auto-log.sh" <<'AUTOLOG'
-#!/usr/bin/env bash
-LOG_DIR="${TMUX_LOG_DIR:-$HOME/tmux-logs}"
-mkdir -p "$LOG_DIR"
-
-SESSION=$(tmux display-message -p '#S')
-WINDOW=$(tmux display-message  -p '#I')
-PANE=$(tmux display-message    -p '#P')
-TIMESTAMP=$(date "+%Y-%m-%d_%H-%M-%S")
-LOG_FILE="$LOG_DIR/tmux-${SESSION}-w${WINDOW}-p${PANE}-${TIMESTAMP}.log"
-
-# Full zsh-syntax-highlighting + zsh-autosuggestions + ^H safe strip via perl
-FILTER='
-  use strict;
-  $| = 1;
-  while (<STDIN>) {
-    s/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)//g;
-    s/\x1b[P][^\x1b]*\x1b\\//g;
-    s/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]//g;
-    s/\x1b[\x20-\x7e]//g;
-    s/\x1b//g;
-    while (s/[^\x08]\x08//) {}
-    s/\x08//g;
-    while (s/[^\n]*\r([^\n])/\1/) {}
-    s/\r//g;
-    s/\x07//g;
-    s/\x00//g;
-    s/[\x01-\x08\x0b-\x1f\x7f]//g;
-    print if /\S/;
-  }
-'
-
-{
-  printf '=%.0s' {1..60}; echo
-  printf " Session: %-10s  Window: %-4s  Pane: %s\n" "$SESSION" "$WINDOW" "$PANE"
-  printf " Started: %s\n" "$(date '+%Y-%m-%d %H:%M:%S')"
-  printf " Log:     %s\n" "$LOG_FILE"
-  printf '=%.0s' {1..60}; echo
-  echo
-} >> "$LOG_FILE"
-
-tmux pipe-pane -o \
-  "exec stdbuf -oL perl -e '$FILTER' >> '$LOG_FILE'"
-
-tmux display-message "Logging → $(basename "$LOG_FILE")"
-AUTOLOG
-
-    chmod +x "$scripts_dir/auto-log.sh"
-
-    # ── Write tmux.conf ──────────────────────────────────────────────────────────
-    # Only write if no existing conf, otherwise merge hooks
+ 
+    # ── Write zsh-logger.zsh ─────────────────────────────────────────────────────
+    cat > "$logger_file" << 'ZSH_LOGGER'
+#!/usr/bin/env zsh
+# zsh-logger.zsh — shell-side structured logger
+# Captures: exact command text (preexec hook), full output (tee via fd),
+# accurate timestamp (moment Enter is pressed), exit code, time taken.
+# No pipe-pane. No terminal stream scraping. Zero control char issues.
+#
+# Log format:
+#   [2025-04-13 14:32:01] nmap -sV 10.10.10.1
+#   <command output here>
+#   time: 12.341s | exit: 0
+#   --------------------------------------------------
+ 
+ZSH_LOG_DIR="${ZSH_LOG_DIR:-$HOME/tmux-logs}"
+mkdir -p "$ZSH_LOG_DIR"
+ 
+_zlog_resolve_file() {
+    if [[ -n "${TMUX_PANE:-}" ]]; then
+        local pane_id="${TMUX_PANE//%/}"
+        local session window
+        session=$(tmux display-message -p '#S' 2>/dev/null || echo "shell")
+        window=$(tmux display-message  -p '#I' 2>/dev/null || echo "0")
+        _ZLOG_FILE="$ZSH_LOG_DIR/tmux-${session}-w${window}-p${pane_id}.log"
+    else
+        _ZLOG_FILE="$ZSH_LOG_DIR/shell-$$.log"
+    fi
+    export _ZLOG_FILE
+}
+_zlog_resolve_file
+ 
+if [[ ! -s "$_ZLOG_FILE" ]]; then
+    {
+        printf '=%.0s' {1..60}; printf '\n'
+        printf ' Started : %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+        printf ' Shell   : zsh (PID %d)\n' "$$"
+        printf ' Pane    : %s\n' "${TMUX_PANE:-none}"
+        printf ' Log     : %s\n' "$_ZLOG_FILE"
+        printf '=%.0s' {1..60}; printf '\n\n'
+    } >> "$_ZLOG_FILE"
+fi
+ 
+_ZLOG_CMD=""
+_ZLOG_START_MS=0
+_ZLOG_TMPOUT=""
+_ZLOG_ACTIVE=0
+ 
+_zlog_preexec() {
+    local cmd="$1"
+    [[ -z "$cmd" ]] && return 0
+    [[ "$cmd" == _zlog* || "$cmd" == zlog_* ]] && return 0
+ 
+    _ZLOG_CMD="$cmd"
+    _ZLOG_START_MS=$(date +%s%3N)
+    _ZLOG_ACTIVE=1
+    _ZLOG_TMPOUT=$(mktemp "${TMPDIR:-/tmp}/.zlog_XXXXXX")
+ 
+    printf '\n[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$_ZLOG_CMD" \
+        >> "$_ZLOG_FILE"
+ 
+    exec 41>&1 42>&2
+    exec 1> >(tee -a "$_ZLOG_TMPOUT" >&41) \
+         2> >(tee -a "$_ZLOG_TMPOUT" >&42)
+}
+ 
+_zlog_precmd() {
+    local exit_code=$?
+    [[ "$_ZLOG_ACTIVE" -ne 1 ]] && return 0
+    _ZLOG_ACTIVE=0
+ 
+    exec 1>&41 2>&42
+    exec 41>&- 42>&-
+ 
+    local now_ms elapsed_ms elapsed_s
+    now_ms=$(date +%s%3N)
+    elapsed_ms=$(( now_ms - _ZLOG_START_MS ))
+    elapsed_s=$(awk "BEGIN{printf \"%.3f\", $elapsed_ms/1000}")
+ 
+    sleep 0.05
+ 
+    [[ -s "$_ZLOG_TMPOUT" ]] && cat "$_ZLOG_TMPOUT" >> "$_ZLOG_FILE"
+    rm -f "$_ZLOG_TMPOUT"
+    _ZLOG_TMPOUT=""
+ 
+    printf 'time: %ss | exit: %d\n' "$elapsed_s" "$exit_code" >> "$_ZLOG_FILE"
+    printf -- '-%.0s' {1..50}; printf '\n'                     >> "$_ZLOG_FILE"
+ 
+    _ZLOG_CMD=""
+}
+ 
+autoload -Uz add-zsh-hook
+add-zsh-hook preexec _zlog_preexec
+add-zsh-hook precmd  _zlog_precmd
+ 
+zlog_stop() {
+    add-zsh-hook -d preexec _zlog_preexec
+    add-zsh-hook -d precmd  _zlog_precmd
+    { exec 1>&41 2>&42; exec 41>&- 42>&-; } 2>/dev/null || true
+    [[ -n "$_ZLOG_TMPOUT" ]] && rm -f "$_ZLOG_TMPOUT"
+    print "[zsh-logger] stopped. log → $_ZLOG_FILE"
+}
+ 
+zlog_show() { tail -f "$_ZLOG_FILE"; }
+ 
+print "[zsh-logger] active → $_ZLOG_FILE"
+ZSH_LOGGER
+ 
+    chmod +x "$logger_file"
+    chown "$TARGET_USER:$TARGET_USER" "$logger_file"
+    success "zsh-logger.zsh → $logger_file"
+ 
+    # ── Auto-source from .zshrc when inside tmux ─────────────────────────────────
+    local source_block
+    source_block="# Auto-start shell logger in every tmux pane
+[[ -n \"\${TMUX_PANE:-}\" && -f \"$logger_file\" ]] && source \"$logger_file\""
+ 
+    [[ -f "$zshrc" ]] || touch "$zshrc"
+    if ! grep -q "zsh-logger.zsh" "$zshrc"; then
+        add_to_rc "$zshrc" "zsh-logger" "$source_block"
+        chown "$TARGET_USER:$TARGET_USER" "$zshrc"
+        success "Auto-source added to $zshrc"
+    else
+        info "zsh-logger already in $zshrc"
+    fi
+ 
+    # ── Write minimal tmux.conf (no pipe-pane, no auto-log hook needed) ──────────
     if [[ ! -f "$tmux_conf" ]]; then
-        cat > "$tmux_conf" <<EOF
+        cat > "$tmux_conf" << 'TMUXCONF'
 # Prefix
 set -g prefix C-a
 bind C-a send-prefix
 unbind C-b
-
+ 
 set -g mouse on
 set -s escape-time 2
 set -g history-limit 500000
 set -g allow-rename off
 set -g default-terminal "xterm-256color"
-
+ 
 # Splits
 bind - split-window -v
 bind / split-window -h
-
-# Vi mode
+ 
+# Vi copy mode
 setw -g mode-keys vi
-
-# Logging paths
-set -g @logging-path "$logs_dir"
-set -g @save-complete-history-path "$logs_dir"
-
+bind -T copy-mode-vi 'v' send-keys -X begin-selection
+bind -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel 'xclip -in -selection clipboard'
+ 
+# Pane join/send
+bind-key j command-prompt -p "Join pane from:" "join-pane -s :'%%'"
+bind-key s command-prompt -p "Send pane to:"   "join-pane -t :'%%'"
+ 
 # Plugins
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-resurrect'
-set -g @plugin 'tmux-plugins/tmux-logging'
-
-# Auto-log every new pane/window/session
-set-hook -g after-new-session   'run-shell "$scripts_dir/auto-log.sh"'
-set-hook -g after-new-window    'run-shell "$scripts_dir/auto-log.sh"'
-set-hook -g after-split-window  'run-shell "$scripts_dir/auto-log.sh"'
-
+set -g @resurrect-capture-pane-contents 'on'
+ 
 run '~/.tmux/plugins/tpm/tpm'
-EOF
-        success "tmux.conf written to $tmux_conf"
+TMUXCONF
+        chown "$TARGET_USER:$TARGET_USER" "$tmux_conf"
+        success "tmux.conf written → $tmux_conf"
     else
-        # Just ensure hooks are present
-        local hook_block="set-hook -g after-new-session  'run-shell \"$scripts_dir/auto-log.sh\"'
-set-hook -g after-new-window   'run-shell \"$scripts_dir/auto-log.sh\"'
-set-hook -g after-split-window 'run-shell \"$scripts_dir/auto-log.sh\"'"
-        add_to_rc "$tmux_conf" "auto-log-hooks" "$hook_block"
-        success "Auto-log hooks added to existing $tmux_conf"
+        info "tmux.conf already exists — not overwriting"
     fi
-
-    chown -R "$TARGET_USER:$TARGET_USER" \
-        "$scripts_dir" "$logs_dir" "$tmux_conf" "$tpm_dir" 2>/dev/null || true
-
+ 
+    chown -R "$TARGET_USER:$TARGET_USER" "$scripts_dir" "$logs_dir"
+ 
     success "Tmux logger installed"
+    info "Logs → $logs_dir"
+    info "Commands: zlog_show (tail log) | zlog_stop (stop logging)"
     info "Open tmux and press prefix + I to install plugins"
 }
