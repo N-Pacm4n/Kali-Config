@@ -12,7 +12,7 @@ install() {
     local logger_file="$scripts_dir/zsh-logger.zsh"
     local zshrc="$USER_HOME/.zshrc"
  
-    mkdir -p "$tpm_dir" "$scripts_dir" "$logs_dir"
+    sudo -u "$TARGET_USER" mkdir -p "$tpm_dir" "$scripts_dir" "$logs_dir"
  
     # ── Install TPM ──────────────────────────────────────────────────────────────
     if [[ ! -d "$tpm_dir/.git" ]]; then
