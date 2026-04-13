@@ -90,26 +90,26 @@ _ZLOG_START=0
 _ZLOG_CMD=""
 
 _zlog_preexec() {
+    [[ -n "$TMUX" ]] || return
+    [[ "$(tmux show-environment -g ZLOG 2>/dev/null)" == "ZLOG=1" ]] || return
+
     [[ -z "$1" ]] && return
 
     _ZLOG_CMD="$1"
     _ZLOG_START=$EPOCHREALTIME
 
     local LOG_DIR="${TMUX_LOG_DIR:-$HOME/tmux-logs}"
-    #mkdir -p "$LOG_DIR"
 
-    if [[ -n "$TMUX_PANE" ]]; then
-        local session window pane
-        session=$(tmux display-message -p '#S')
-        window=$(tmux display-message -p '#I')
-        pane=$(tmux display-message -p '#{pane_id}' | tr -d '%')
+    local session window pane
+    session=$(tmux display-message -p '#S')
+    window=$(tmux display-message -p '#I')
+    pane=$(tmux display-message -p '#{pane_id}' | tr -d '%')
 
-        LOG_FILE="$LOG_DIR/tmux-${session}-${window}-${pane}.log"
+    LOG_FILE="$LOG_DIR/tmux-${session}-${window}-${pane}.log"
 
-        printf "[%s] %s\n" \
-            "$(strftime '%Y-%m-%d %H:%M:%S' $EPOCHSECONDS)" \
-            "$_ZLOG_CMD" >> "$LOG_FILE"
-    fi
+    printf "[%s] %s\n" \
+        "$(strftime '%Y-%m-%d %H:%M:%S' $EPOCHSECONDS)" \
+        "$_ZLOG_CMD" >> "$LOG_FILE"
 }
 
 autoload -Uz add-zsh-hook
