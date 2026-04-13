@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-MODULE_NAME="OPSEC Setup"
-MODULE_DESC="Aliases, history hardening, clean scripts"
-MODULE_CATEGORY="setup"
+MODULE_NAME="Terminal Setup"
+MODULE_DESC="Aliases, history hardening, clean scripts, configure proxychains, Configure SSH"
+MODULE_CATEGORY="general"
 
 install() {
     # Unlimited history with timestamps
@@ -17,7 +17,7 @@ setopt SHARE_HISTORY         2>/dev/null || true'
 
     # OPSEC aliases
     local alias_block
-    alias_block='# OPSEC aliases
+    alias_block='# Aliases
 alias curl="curl -s -A \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\""
 alias wget="wget -q"
 alias clean-history="history -c; history -w; cat /dev/null > ~/.bash_history; cat /dev/null > ~/.zsh_history; echo \"[+] History cleared\""

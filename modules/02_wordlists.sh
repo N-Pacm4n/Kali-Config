@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 MODULE_NAME="Wordlists"
 MODULE_DESC="SecLists, rockyou unzipped, custom RT lists"
-MODULE_CATEGORY="recon"
+MODULE_CATEGORY="general"
 
 install() {
     require_root

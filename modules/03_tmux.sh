@@ -1,9 +1,9 @@
 MODULE_NAME="Tmux Setup"
 MODULE_DESC="Setup tmux with logging and log export functionality"
-MODULE_CATEGORY="setup"   # setup | recon | ad | infra | web | general
+MODULE_CATEGORY="general"   
 
 install() {
-        apt_install tmux git
+        apt_install tmux git zip
  
     local tpm_dir="$USER_HOME/.tmux/plugins/tpm"
     local scripts_dir="$USER_HOME/.tmux/scripts"
@@ -139,7 +139,8 @@ set -s escape-time 2
 set -g history-limit 500000
 set -g allow-rename off
 set -g default-terminal "xterm-256color"
- 
+set -g status-right '#{?ZLOG,#[fg=green]LOGGING ON,#[fg=red]LOGGING OFF}'
+
 # Splits
 bind - split-window -v
 bind / split-window -h
@@ -157,11 +158,14 @@ bind-key s command-prompt -p "Send pane to:"   "join-pane -t :'%%'"
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-resurrect'
 set -g @resurrect-capture-pane-contents 'on'
- 
+
+bind-key L run-shell "tmux set-environment -g ZLOG 1; tmux display-message 'Logging ON'"
+bind-key S run-shell "tmux set-environment -gu ZLOG; tmux display-message 'Logging OFF'"
+
 # Setup Auto Logging
-set-hook -g after-new-session 'run-shell "~/.tmux/scripts/zsh-logger.zsh"'
-set-hook -g after-new-window 'run-shell "~/.tmux/scripts/zsh-logger.zsh"'
-set-hook -g after-split-window 'run-shell "~/.tmux/scripts/zsh-logger.zsh"'
+#set-hook -g after-new-session 'run-shell "~/.tmux/scripts/zsh-logger.zsh"'
+#set-hook -g after-new-window 'run-shell "~/.tmux/scripts/zsh-logger.zsh"'
+#set-hook -g after-split-window 'run-shell "~/.tmux/scripts/zsh-logger.zsh"'
 
 run '~/.tmux/plugins/tpm/tpm'
 TMUXCONF
@@ -175,6 +179,41 @@ TMUXCONF
  
     success "Tmux logger installed"
     info "Logs → $logs_dir"
-    info "Commands: zlog_show (tail log) | zlog_stop (stop logging)"
     info "Open tmux and press prefix + I to install plugins"
+
+    # ── Setting up tmux aliases ──────────
+    tmuxAliases=$(cat << 'EOF'
+# -------- Tmux Aliases --------
+ktx() {
+[[ -n "$TMUX" ]] || { echo "Not inside tmux"; return; }
+
+local session
+session=$(tmux display-message -p '#S')
+
+zip_tmux_logs
+tmux kill-session -t "$session"
+}
+    
+# -------- Zip tmux logs --------
+zip_tmux_logs() {
+    local LOG_DIR="${TMUX_LOG_DIR:-$HOME/tmux-logs}"
+    [[ -d "$LOG_DIR" ]] || return
+
+    local ts
+    ts=$(date "+%Y-%m-%d_%H-%M-%S")
+
+    local zip_file="$HOME/tmux-session-${ts}-logs.zip"
+
+    # zip quietly
+    command -v zip >/dev/null || { echo "[!] zip not installed"; return; }
+
+    zip -rq "$zip_file" "$LOG_DIR"
+    
+    rm -f $LOG_DIR/*
+
+    echo "[+] Logs cleaned & archived → $zip_file"
+}
+    
+    EOF
+    )
 }

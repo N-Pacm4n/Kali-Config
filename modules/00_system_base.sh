@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 MODULE_NAME="Base System Configuration"
 MODULE_DESC="/opt ownership change, apt update, xfce4-terminal, pipx install, go install, zsh datetime prompt"
-MODULE_CATEGORY="setup"
+MODULE_CATEGORY="general"
 
 install() {
     require_root
