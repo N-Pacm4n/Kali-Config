@@ -119,7 +119,7 @@ EOF
 
     [[ -f "$zshrc" ]] || touch "$zshrc"
     if ! grep -q "zsh-logger.zsh" "$zshrc"; then
-        add_to_rc "$zshrc" "command logger" "$c_block"
+        add_to_rc "$zshrc" "command logger" "$commandBlock"
         chown "$TARGET_USER:$TARGET_USER" "$zshrc"
         success "Auto-source added to $zshrc"
     else
@@ -214,6 +214,6 @@ zip_tmux_logs() {
     echo "[+] Logs cleaned & archived → $zip_file"
 }
     
-    EOF
+EOF
     )
 }
