@@ -82,7 +82,7 @@ ZSH_LOGGER
 
 
 # ── Auto-source from .zshrc when inside tmux ─────────────────────────────────
-read -r -d '' c_block << 'EOF'
+commandBlock=$(cat << 'EOF'
 # -------- Command logger (safe with tmux) --------
 zmodload zsh/datetime
 
@@ -115,6 +115,7 @@ _zlog_preexec() {
 autoload -Uz add-zsh-hook
 add-zsh-hook preexec _zlog_preexec
 EOF
+)
 
     [[ -f "$zshrc" ]] || touch "$zshrc"
     if ! grep -q "zsh-logger.zsh" "$zshrc"; then
@@ -158,9 +159,9 @@ set -g @plugin 'tmux-plugins/tmux-resurrect'
 set -g @resurrect-capture-pane-contents 'on'
  
 # Setup Auto Logging
-set-hook -g after-new-session 'run-shell "~/.tmux/scripts/auto-log.sh"'
-set-hook -g after-new-window 'run-shell "~/.tmux/scripts/auto-log.sh"'
-set-hook -g after-split-window 'run-shell "~/.tmux/scripts/auto-log.sh"'
+set-hook -g after-new-session 'run-shell "~/.tmux/scripts/zsh-logger.zsh"'
+set-hook -g after-new-window 'run-shell "~/.tmux/scripts/zsh-logger.zsh"'
+set-hook -g after-split-window 'run-shell "~/.tmux/scripts/zsh-logger.zsh"'
 
 run '~/.tmux/plugins/tpm/tpm'
 TMUXCONF
