@@ -1,25 +1,4 @@
-# Kali Red Team Setup — Modular Edition
-
-## Structure
-
-```
-kali-setup/
-├── setup.sh              ← menu loader, never edit this for new tools
-├── lib/
-│   └── common.sh         ← shared helpers (info, apt_install, github_download, etc.)
-└── modules/
-    ├── _template.sh      ← copy this to add a new module
-    ├── 00_system_base.sh
-    ├── 01_go.sh
-    ├── 02_opsec.sh
-    ├── 03_ad_tools.sh
-    ├── 04_pipx.sh
-    ├── 05_go_tools.sh
-    ├── 06_wordlists.sh
-    ├── 07_static_bins.sh
-    ├── 08_c2.sh
-    └── 09_tmux_logger.sh
-```
+# Kali Setup for Pentesting
 
 ## Usage
 
