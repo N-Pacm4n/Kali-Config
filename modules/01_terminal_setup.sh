@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 MODULE_NAME="Terminal Setup"
-MODULE_DESC="Aliases, history hardening, clean scripts, configure proxychains, Configure SSH"
+MODULE_DESC="Aliases, history hardening, clean scripts, configure proxychains (Socks5 1080), Configure SSH"
 MODULE_CATEGORY="general"
 
 install() {
