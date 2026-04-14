@@ -1,10 +1,50 @@
 #!/usr/bin/env bash
 MODULE_NAME="Base System Configuration"
-MODULE_DESC="/opt ownership change, apt update, pipx install, go install, zsh datetime prompt"
+MODULE_DESC="/opt ownership change, apt update, install pipx, install go, zsh datetime prompt"
 MODULE_CATEGORY="general"
 
 install() {
     require_root
+
+    if grep -qi microsoft /proc/version 2>/dev/null; then
+        fail "WSL detected. Module cannot run exiting..."
+        return
+    fi
+
+    # ── XFCE4 Terminal ───────────────────────────────────────────────────────────
+    info "Installing XFCE4-Terminal..."
+    apt_install xfce4-terminal
+
+    local uid
+    uid=$(id -u "$TARGET_USER")
+
+    sudo -u "$TARGET_USER" env \
+        DISPLAY=:0 \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
+        bash -c '
+        xfconf-query -c xfce4-terminal -p /background-mode -s TERMINAL_BACKGROUND_SOLID --create -t string
+        xfconf-query -c xfce4-terminal -p /color-background -s "#000000000000" --create -t string
+        xfconf-query -c xfce4-terminal -p /color-foreground -s "#FFFAF4" --create -t string
+        xfconf-query -c xfce4-terminal -p /color-cursor -s "#FFFAF4" --create -t string
+        xfconf-query -c xfce4-terminal -p /color-bold-is-bright -s true --create -t bool
+        xfconf-query -c xfce4-terminal -p /font-name -s "Fira Code weight=450 10" --create -t string
+        xfconf-query -c xfce4-terminal -p /font-use-system -s false --create -t bool
+        xfconf-query -c xfce4-terminal -p /misc-cursor-blinks -s true --create -t bool
+        xfconf-query -c xfce4-terminal -p /misc-cursor-shape -s TERMINAL_CURSOR_SHAPE_IBEAM --create -t string
+        xfconf-query -c xfce4-terminal -p /misc-menubar-default -s false --create -t bool
+        xfconf-query -c xfce4-terminal -p /scrolling-unlimited -s true --create -t bool
+        xfconf-query -c xfce4-terminal -p /title-mode -s TERMINAL_TITLE_HIDE --create -t string
+        xfconf-query -c xfce4-terminal -p /misc-maximize-default -s true --create -t bool
+    ' 2>> "$MODULE_LOG" && success "xfce4-terminal configured" || warn "xfce4-terminal config failed (may need display)"
+
+    local helpers="/etc/xdg/xfce4/helpers.rc"
+    mkdir -p "$(dirname "$helpers")"
+    if grep -q "^TerminalEmulator=" "$helpers" 2>/dev/null; then
+        sed -i 's|^TerminalEmulator=.*|TerminalEmulator=xfce4-terminal|' "$helpers"
+    else
+        echo "TerminalEmulator=xfce4-terminal" >> "$helpers"
+    fi
+    success "Default terminal set to xfce4-terminal"
 
     # ── /opt ownership change ───────────────────────────────────────────────────────────────────
     info "Changing ownership of /opt..."

@@ -6,40 +6,8 @@ install() {
     
     require_root
     
-    # ── XFCE4 Terminal ───────────────────────────────────────────────────────────
-    info "Installing XFCE4-Terminal..."
-    apt_install xfce4-terminal tmux git zip
+    apt_install tmux git zip
 
-    local uid
-    uid=$(id -u "$TARGET_USER")
-
-    sudo -u "$TARGET_USER" env \
-        DISPLAY=:0 \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
-        bash -c '
-        xfconf-query -c xfce4-terminal -p /background-mode -s TERMINAL_BACKGROUND_SOLID --create -t string
-        xfconf-query -c xfce4-terminal -p /color-background -s "#000000000000" --create -t string
-        xfconf-query -c xfce4-terminal -p /color-foreground -s "#FFFAF4" --create -t string
-        xfconf-query -c xfce4-terminal -p /color-cursor -s "#FFFAF4" --create -t string
-        xfconf-query -c xfce4-terminal -p /color-bold-is-bright -s true --create -t bool
-        xfconf-query -c xfce4-terminal -p /font-name -s "Fira Code weight=450 10" --create -t string
-        xfconf-query -c xfce4-terminal -p /font-use-system -s false --create -t bool
-        xfconf-query -c xfce4-terminal -p /misc-cursor-blinks -s true --create -t bool
-        xfconf-query -c xfce4-terminal -p /misc-cursor-shape -s TERMINAL_CURSOR_SHAPE_IBEAM --create -t string
-        xfconf-query -c xfce4-terminal -p /misc-menubar-default -s false --create -t bool
-        xfconf-query -c xfce4-terminal -p /scrolling-unlimited -s true --create -t bool
-        xfconf-query -c xfce4-terminal -p /title-mode -s TERMINAL_TITLE_HIDE --create -t string
-    ' 2>> "$MODULE_LOG" && success "xfce4-terminal configured" || warn "xfce4-terminal config failed (may need display)"
-
-    local helpers="/etc/xdg/xfce4/helpers.rc"
-    mkdir -p "$(dirname "$helpers")"
-    if grep -q "^TerminalEmulator=" "$helpers" 2>/dev/null; then
-        sed -i 's|^TerminalEmulator=.*|TerminalEmulator=xfce4-terminal|' "$helpers"
-    else
-        echo "TerminalEmulator=xfce4-terminal" >> "$helpers"
-    fi
-    success "Default terminal set to xfce4-terminal"
- 
     local tpm_dir="$USER_HOME/.tmux/plugins/tpm"
     local scripts_dir="$USER_HOME/.tmux/scripts"
     local logs_dir="$USER_HOME/tmux-logs"
@@ -283,6 +251,7 @@ set -g allow-rename off
 set -g default-terminal "xterm-256color"
 set -g status-style 'bg=black,fg=white'
 set -g status-right '#[fg=white,bg=black]#{?ZLOG,[Log ON],[Log OFF]} #[fg=white,bg=black]| CPU: #(grep "cpu " /proc/stat | awk "{u=\$2+\$4; t=\$2+\$3+\$4+\$5; print int(u/t*100)}"%%) #[fg=white,bg=black]| RAM: #(free -m | awk "/^Mem/{printf \"%.0f%%%%\", \$3/\$2*100}") #[fg=white,bg=black]| Load: #(cut -d" " -f1 /proc/loadavg)'
+set-option -g default-shell /usr/bin/zsh
 
 # Splits
 bind - split-window -v
