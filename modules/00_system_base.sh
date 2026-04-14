@@ -62,7 +62,6 @@ install() {
     # ── PIPX Install ──────────────────────────────────────────────────────
     info "Installing pipx..."
     apt_install pipx || pip3 install pipx --break-system-packages >> "$MODULE_LOG" 2>&1
-
     # Ensure pipx path is in shell rc
     local pipx_block
     pipx_block='export PATH="$PATH:$HOME/.local/bin"'

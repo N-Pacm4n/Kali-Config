@@ -65,6 +65,6 @@ install() {
     # Install Certipy-ad
     info "Installing Certipy"
     sudo -u "$TARGET_USER" pipx install certipy-ad
-    Success "Certipy installed"
+    success "Certipy installed"
 
 }

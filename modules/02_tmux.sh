@@ -279,7 +279,7 @@ bind-key L run-shell "
         tmux display-message 'Logging OFF'
     else
         tmux set-environment -g ZLOG 1
-        tmux set-environment -g ZLOG_STARTED "$(date +%s)"
+        tmux set-environment -g ZLOG_STARTED '$(date +%s)'
         tmux display-message 'Logging ON'
     fi"
 
