@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup.sh — modular Kali red team setup
+# setup.sh — modular pentest setup
 # Usage: sudo ./setup.sh [--force] [--category <cat>]
 
 set -o nounset
@@ -8,7 +8,7 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODULES_DIR="$SCRIPT_DIR/modules"
 LIB_DIR="$SCRIPT_DIR/lib"
-LOG_DIR="$HOME/kali-setup-logs"
+LOG_DIR="$HOME/.OpsForge-logs"
 FORCE=0
 FILTER_CATEGORY=""
 
@@ -69,7 +69,7 @@ _load_modules() {
 # ── Print menu ──────────────────────────────────────────────────────────────────
 _print_menu() {
     echo -e "\n${BOLD}${CYAN}╔══════════════════════════════════════════════════╗${RESET}"
-    echo -e "${BOLD}${CYAN}║        Kali Red Team Setup — Module Menu         ║${RESET}"
+    echo -e "${BOLD}${CYAN}║                      OpsForge                    ║${RESET}"
     echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════╝${RESET}\n"
 
     local prev_cat=""

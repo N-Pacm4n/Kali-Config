@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-MODULE_NAME="Tool Install"
-MODULE_DESC="SecLists, rockyou unzipped, "
+MODULE_NAME="Toolkit"
+MODULE_DESC="SecLists, rockyou unzipped, certipy, netexec"
 MODULE_CATEGORY="general"
 
 install() {

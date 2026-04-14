@@ -1,11 +1,10 @@
-# Kali Setup for Pentesting
+# OpsForge
 
 ## Usage
 
 ```bash
 sudo ./setup.sh              # interactive menu
 sudo ./setup.sh --force      # re-run even if already installed
-sudo ./setup.sh --category ad  # show only AD modules
 ```
 
 **Multi-select:** enter numbers separated by commas or spaces — `1,3,5` or `1 3 5`  
@@ -16,7 +15,7 @@ sudo ./setup.sh --category ad  # show only AD modules
 ## Adding a New Module
 
 ```bash
-cp modules/_template.sh modules/10_mytool.sh
+cp _template.sh modules/10_mytool.sh
 # edit the three header lines and the install() function
 # that's it — it appears in the menu automatically
 ```
@@ -48,5 +47,17 @@ cp modules/_template.sh modules/10_mytool.sh
 
 ## State
 
-Completed modules are tracked in `~/.kali-setup-state/`.  
+Completed modules are tracked in `~/.opsforge/`.  
 Delete a `.done` file to allow re-running that module.
+
+## Tmux Usage with Logging
+
+Run `Prefix + I` after opening tmux for first time.
+
+| Shortcut | Purpose |
+|----------|---------|
+| `ctrl + a`  | Prefix Key |
+| `prefix + /`  | Split pane vertically |
+| `prefix + -`     | Split pane horizontally |
+| `prefix + L`  | Toggle logging On and Off |
+| `prefix + Z`    | Archive all the current logs in zip file inside ~/tmux-logs/ |

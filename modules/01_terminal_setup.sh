@@ -39,10 +39,10 @@ alias opsec-clean="clean-history && clean-tmp && echo \"[+] OPSEC clean done\""'
     mkdir -p "$ssh_dir"
     chmod 700 "$ssh_dir"
 
-    if ! grep -q "kali-setup: ssh-defaults" "$ssh_conf" 2>/dev/null; then
+    if ! grep -q "OpsForge: ssh-defaults" "$ssh_conf" 2>/dev/null; then
         cat >> "$ssh_conf" <<'EOF'
 
-# >>> kali-setup: ssh-defaults >>>
+# >>> OpsForge: ssh-defaults >>>
 Host *
     ServerAliveInterval 60
     ServerAliveCountMax 10
@@ -50,7 +50,7 @@ Host *
     ControlPath ~/.ssh/cm-%r@%h:%p
     ControlPersist 10m
 
-# <<< kali-setup: ssh-defaults <<<
+# <<< OpsForge: ssh-defaults <<<
 EOF
         chmod 600 "$ssh_conf"
         chown "$TARGET_USER:$TARGET_USER" "$ssh_conf"

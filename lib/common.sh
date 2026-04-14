@@ -43,7 +43,7 @@ apt_install() {
 }
 
 # ── State tracking ──────────────────────────────────────────────────────────────
-STATE_DIR="${HOME}/.kali-setup-state"
+STATE_DIR="${HOME}/.opsforge"
 mkdir -p "$STATE_DIR"
 
 is_done() {
@@ -114,8 +114,8 @@ github_download() {
 add_to_rc() {
     # Usage: add_to_rc "$HOME/.zshrc" "block-id" "content"
     local rc_file="$1" block_id="$2" content="$3"
-    local marker_start="# >>> kali-setup: ${block_id} >>>"
-    local marker_end="# <<< kali-setup: ${block_id} <<<"
+    local marker_start="# >>> OpsForge: ${block_id} >>>"
+    local marker_end="# <<< OpsForge: ${block_id} <<<"
 
     if grep -qF "$marker_start" "$rc_file" 2>/dev/null; then
         # Replace existing block
