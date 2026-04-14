@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 MODULE_NAME="Base System Configuration"
-MODULE_DESC="/opt ownership change, apt update, xfce4-terminal, pipx install, go install, zsh datetime prompt"
+MODULE_DESC="/opt ownership change, apt update, pipx install, go install, zsh datetime prompt"
 MODULE_CATEGORY="general"
 
 install() {
@@ -18,40 +18,6 @@ install() {
     # ── Update ───────────────────────────────────────────────────────────────────
     info "Running apt update..."
     apt update -y && apt dist-upgrade -y >> "$MODULE_LOG" 2>&1 && success "apt update done"
-
-    # ── XFCE4 Terminal ───────────────────────────────────────────────────────────
-    info "Installing XFCE4-Terminal..."
-    apt_install xfce4-terminal
-
-    local uid
-    uid=$(id -u "$TARGET_USER")
-
-    sudo -u "$TARGET_USER" env \
-        DISPLAY=:0 \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
-        bash -c '
-        xfconf-query -c xfce4-terminal -p /background-mode -s TERMINAL_BACKGROUND_SOLID --create -t string
-        xfconf-query -c xfce4-terminal -p /color-background -s "#000000000000" --create -t string
-        xfconf-query -c xfce4-terminal -p /color-foreground -s "#FFFAF4" --create -t string
-        xfconf-query -c xfce4-terminal -p /color-cursor -s "#FFFAF4" --create -t string
-        xfconf-query -c xfce4-terminal -p /color-bold-is-bright -s true --create -t bool
-        xfconf-query -c xfce4-terminal -p /font-name -s "Fira Code weight=450 10" --create -t string
-        xfconf-query -c xfce4-terminal -p /font-use-system -s false --create -t bool
-        xfconf-query -c xfce4-terminal -p /misc-cursor-blinks -s true --create -t bool
-        xfconf-query -c xfce4-terminal -p /misc-cursor-shape -s TERMINAL_CURSOR_SHAPE_IBEAM --create -t string
-        xfconf-query -c xfce4-terminal -p /misc-menubar-default -s false --create -t bool
-        xfconf-query -c xfce4-terminal -p /scrolling-unlimited -s true --create -t bool
-        xfconf-query -c xfce4-terminal -p /title-mode -s TERMINAL_TITLE_HIDE --create -t string
-    ' 2>> "$MODULE_LOG" && success "xfce4-terminal configured" || warn "xfce4-terminal config failed (may need display)"
-
-    local helpers="/etc/xdg/xfce4/helpers.rc"
-    mkdir -p "$(dirname "$helpers")"
-    if grep -q "^TerminalEmulator=" "$helpers" 2>/dev/null; then
-        sed -i 's|^TerminalEmulator=.*|TerminalEmulator=xfce4-terminal|' "$helpers"
-    else
-        echo "TerminalEmulator=xfce4-terminal" >> "$helpers"
-    fi
-    success "Default terminal set to xfce4-terminal"
 
     # ── PIPX Install ──────────────────────────────────────────────────────
     info "Installing pipx..."

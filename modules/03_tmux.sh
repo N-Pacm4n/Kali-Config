@@ -3,7 +3,42 @@ MODULE_DESC="Setup tmux with logging and log export functionality"
 MODULE_CATEGORY="general"   
 
 install() {
-        apt_install tmux git zip
+    
+    require_root
+    
+    # ── XFCE4 Terminal ───────────────────────────────────────────────────────────
+    info "Installing XFCE4-Terminal..."
+    apt_install xfce4-terminal tmux git zip
+
+    local uid
+    uid=$(id -u "$TARGET_USER")
+
+    sudo -u "$TARGET_USER" env \
+        DISPLAY=:0 \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" \
+        bash -c '
+        xfconf-query -c xfce4-terminal -p /background-mode -s TERMINAL_BACKGROUND_SOLID --create -t string
+        xfconf-query -c xfce4-terminal -p /color-background -s "#000000000000" --create -t string
+        xfconf-query -c xfce4-terminal -p /color-foreground -s "#FFFAF4" --create -t string
+        xfconf-query -c xfce4-terminal -p /color-cursor -s "#FFFAF4" --create -t string
+        xfconf-query -c xfce4-terminal -p /color-bold-is-bright -s true --create -t bool
+        xfconf-query -c xfce4-terminal -p /font-name -s "Fira Code weight=450 10" --create -t string
+        xfconf-query -c xfce4-terminal -p /font-use-system -s false --create -t bool
+        xfconf-query -c xfce4-terminal -p /misc-cursor-blinks -s true --create -t bool
+        xfconf-query -c xfce4-terminal -p /misc-cursor-shape -s TERMINAL_CURSOR_SHAPE_IBEAM --create -t string
+        xfconf-query -c xfce4-terminal -p /misc-menubar-default -s false --create -t bool
+        xfconf-query -c xfce4-terminal -p /scrolling-unlimited -s true --create -t bool
+        xfconf-query -c xfce4-terminal -p /title-mode -s TERMINAL_TITLE_HIDE --create -t string
+    ' 2>> "$MODULE_LOG" && success "xfce4-terminal configured" || warn "xfce4-terminal config failed (may need display)"
+
+    local helpers="/etc/xdg/xfce4/helpers.rc"
+    mkdir -p "$(dirname "$helpers")"
+    if grep -q "^TerminalEmulator=" "$helpers" 2>/dev/null; then
+        sed -i 's|^TerminalEmulator=.*|TerminalEmulator=xfce4-terminal|' "$helpers"
+    else
+        echo "TerminalEmulator=xfce4-terminal" >> "$helpers"
+    fi
+    success "Default terminal set to xfce4-terminal"
  
     local tpm_dir="$USER_HOME/.tmux/plugins/tpm"
     local scripts_dir="$USER_HOME/.tmux/scripts"
@@ -54,7 +89,7 @@ zip_file="$LOG_DIR/tmux-session-${created_human}-logs.zip"
   cd "$LOG_DIR" || exit 0
   zip -q "$zip_file" *.log
 )
-
+rm -f "${logs[@]}"
 tmux display-message "[+] Logs archived → $(basename "$zip_file")"
 
 ZSH_LOGGER
