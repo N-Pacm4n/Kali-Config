@@ -6,6 +6,8 @@ MODULE_CATEGORY="general"
 install() {
     require_root
 
+    require_module "00_system_base"
+
     local wl_dir="/opt/wordlists"
     mkdir -p "$wl_dir"
 
@@ -57,12 +59,12 @@ install() {
     # Update netexec
     info "Installing latest version of netexec"
     rm -rf /usr/bin/netexec /usr/bin/nxc
-    pipx install git+https://github.com/Pennyw0rth/NetExec
+    sudo -u "$TARGET_USER" pipx install git+https://github.com/Pennyw0rth/NetExec
     success "Netexec latest version installed"
 
     # Install Certipy-ad
     info "Installing Certipy"
-    pipx install certipy-ad
+    sudo -u "$TARGET_USER" pipx install certipy-ad
     Success "Certipy installed"
 
 }
